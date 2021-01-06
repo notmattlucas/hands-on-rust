@@ -10,6 +10,22 @@ pub struct MapBuilder {
 
 impl MapBuilder {
 
+    pub fn build(rng: &mut RandomNumberGenerator) -> Self {
+
+        let mut mb = MapBuilder{
+            map: Map::new(),
+            rooms: Vec::new(),
+            player_start: Point::zero(),
+        };
+
+        mb.fill(TileType::Wall);
+        mb.build_random_rooms(rng);
+        mb.build_corridors(rng);
+        mb.player_start = mb.rooms[0].center();
+        mb
+
+    }
+
     fn fill(&mut self, tile: TileType) {
         self.map.tiles.iter_mut().for_each(|t| *t = tile);
     }
@@ -58,6 +74,20 @@ impl MapBuilder {
         }
     }
 
-    // TODO - page 107
+    fn build_corridors(&mut self, rng: &mut RandomNumberGenerator) {
+        let mut rooms = self.rooms.clone();
+        rooms.sort_by(|a, b| a.center().x.cmp(&b.center().x));
+        for (i, room)in rooms.iter().enumerate().skip(1) {
+            let prev = rooms[i-1].center();
+            let new = room.center();
+            if rng.range(0,2) == 1 {
+                self.apply_horizontal_tunnel(prev.x, new.x, prev.y);
+                self.apply_vertical_tunnel(prev.y, new.y, new.x);
+            } else {
+                self.apply_vertical_tunnel(prev.y, new.y, prev.x);
+                self.apply_horizontal_tunnel(prev.x, new.x, new.y);
+            }
+        }
+    }
 
 }
